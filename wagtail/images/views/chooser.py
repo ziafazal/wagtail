@@ -6,11 +6,10 @@ from wagtail.admin.forms import SearchForm
 from wagtail.admin.modal_workflow import render_modal_workflow
 from wagtail.admin.utils import PermissionPolicyChecker, popular_tags_for_model
 from wagtail.core import hooks
-from wagtail.core.models import Collection
 from wagtail.images import get_image_model
 from wagtail.images.formats import get_image_format
 from wagtail.images.forms import ImageInsertionForm, get_image_form
-from wagtail.images.permissions import permission_policy
+from wagtail.images.permissions import collection_permission_policy, permission_policy
 from wagtail.search import index as search_index
 from wagtail.utils.pagination import paginate
 
@@ -55,7 +54,9 @@ def chooser(request):
     else:
         uploadform = None
 
-    images = Image.objects.order_by('-created_at')
+    images = collection_permission_policy.instances_user_has_any_permission_for(
+        request.user, ['add', 'change']
+    ).order_by('-created_at')
 
     # allow hooks to modify the queryset
     for hook in hooks.get_hooks('construct_image_chooser_queryset'):
@@ -97,7 +98,9 @@ def chooser(request):
     else:
         searchform = SearchForm()
 
-        collections = Collection.objects.all()
+        collections = collection_permission_policy.collections_user_has_any_permission_for(
+            request.user, ['add', 'change']
+        )
         if len(collections) < 2:
             collections = None
 
